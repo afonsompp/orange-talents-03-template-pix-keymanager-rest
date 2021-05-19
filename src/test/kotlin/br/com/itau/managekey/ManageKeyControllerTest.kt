@@ -84,7 +84,7 @@ internal class ManageKeyControllerTest {
 	}
 
 	@Test
-	fun `should return customer not found error with status 404`() {
+	fun `should return customer not found error with status 404 in register key operation`() {
 		val body = RegisterNewKeyRequest(
 			"02654220273", KeyType.CPF, AccountType.CURRENT_ACCOUNT, UUID.randomUUID().toString()
 		)
@@ -93,6 +93,37 @@ internal class ManageKeyControllerTest {
 			.thenThrow(StatusRuntimeException(NOT_FOUND.withDescription("Customer not found")))
 
 		val request = HttpRequest.POST("/api/key", body)
+
+		val e = assertThrows<HttpClientResponseException> {
+			client.toBlocking().exchange(request, RegisterNewKeyResponse::class.java)
+		}
+
+		assertEquals(HttpStatus.NOT_FOUND, e.status)
+		assertEquals("Customer not found", e.message)
+	}
+
+	@Test
+	fun `should delete key and return status 204`() {
+		val body = DeleteKeyRequest(1, UUID.randomUUID().toString())
+
+		val grpcResponse = RemoveKeyResponse.newBuilder().setMessage("Success").build()
+		case(grpcClient.removeKey(any(RemoveKeyRequest::class.java))).thenReturn(grpcResponse)
+
+		val request = HttpRequest.DELETE("/api/key", body)
+
+		val response = client.toBlocking().exchange(request, Any::class.java)
+
+		assertEquals(NO_CONTENT, response.status)
+	}
+
+	@Test
+	fun `should return customer not found error with status 404 in delete key operation`() {
+		val body = DeleteKeyRequest(1, UUID.randomUUID().toString())
+
+		case(grpcClient.removeKey(any(RemoveKeyRequest::class.java)))
+			.thenThrow(StatusRuntimeException(NOT_FOUND.withDescription("Customer not found")))
+
+		val request = HttpRequest.DELETE("/api/key", body)
 
 		val e = assertThrows<HttpClientResponseException> {
 			client.toBlocking().exchange(request, RegisterNewKeyResponse::class.java)
