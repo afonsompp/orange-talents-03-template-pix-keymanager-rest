@@ -1,6 +1,8 @@
 package br.com.itau.managekey
 
 import br.com.zup.manage.pix.*
+import br.com.zup.manage.pix.AccountType.CONTA_CORRENTE
+import com.google.protobuf.Timestamp
 import io.grpc.Status.*
 import io.grpc.StatusRuntimeException
 import io.micronaut.context.annotation.Factory
@@ -16,6 +18,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.*
+import java.time.Instant
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -131,6 +134,117 @@ internal class ManageKeyControllerTest {
 
 		assertEquals(HttpStatus.NOT_FOUND, e.status)
 		assertEquals("Customer not found", e.message)
+	}
+
+	@Test
+	fun `Should return details of a key if it exists`() {
+		val now = Instant.now()
+		val grpcResponse = KeyDetailsResponse.newBuilder()
+			.setKey("02654220273")
+			.setKeyId(1)
+			.setCustomerId(UUID.randomUUID().toString())
+			.setKeyType(KeyType.CPF)
+			.setCreatedAt(
+				Timestamp.newBuilder()
+					.setSeconds(now.epochSecond)
+					.setNanos(now.nano)
+			)
+			.setAccount(
+				KeyDetailsResponse.AccountDetailsResponse.newBuilder()
+					.setCustomerCPF("02654220273")
+					.setCustomerName("Afonso")
+					.setAccountType(CONTA_CORRENTE)
+					.setBranch("123")
+					.setNumber("123")
+					.setInstitution("ITAÚ UNIBANCO S.A.")
+					.build()
+			).build()
+		case(grpcClient.findKey(any(KeyDetailsRequest::class.java))).thenReturn(grpcResponse)
+
+		val response =
+			client.toBlocking().exchange("/api/key/${grpcResponse.key}", KeyResponse::class.java)
+
+		assertEquals(HttpStatus.OK, response.status)
+		assertEquals(grpcResponse.keyId, response.body()!!.keyId)
+		assertEquals(grpcResponse.key, response.body()!!.key)
+		assertEquals(grpcResponse.keyType, response.body()!!.keyType)
+		assertEquals(grpcResponse.customerId, response.body()!!.customerId)
+		assertEquals(grpcResponse.account.customerCPF, response.body()!!.account.customerCPF)
+		assertEquals(grpcResponse.account.customerName, response.body()!!.account.customerName)
+		assertEquals(grpcResponse.account.accountType, response.body()!!.account.accountType.grpcType)
+		assertEquals(grpcResponse.account.branch, response.body()!!.account.accountBranch)
+		assertEquals(grpcResponse.account.number, response.body()!!.account.accountNumber)
+		assertEquals(grpcResponse.account.institution, response.body()!!.account.institution)
+	}
+
+	@Test
+	fun `Should return details of a key if it exists when find by customer and key id`() {
+		val now = Instant.now()
+		val grpcResponse = KeyDetailsResponse.newBuilder()
+			.setKey("02654220273")
+			.setKeyId(1)
+			.setCustomerId(UUID.randomUUID().toString())
+			.setKeyType(KeyType.CPF)
+			.setCreatedAt(
+				Timestamp.newBuilder()
+					.setSeconds(now.epochSecond)
+					.setNanos(now.nano)
+			)
+			.setAccount(
+				KeyDetailsResponse.AccountDetailsResponse.newBuilder()
+					.setCustomerCPF("02654220273")
+					.setCustomerName("Afonso")
+					.setAccountType(CONTA_CORRENTE)
+					.setBranch("123")
+					.setNumber("123")
+					.setInstitution("ITAÚ UNIBANCO S.A.")
+					.build()
+			).build()
+		case(grpcClient.findKey(any(KeyDetailsRequest::class.java))).thenReturn(grpcResponse)
+
+		val response = client.toBlocking()
+			.exchange(
+				"/api/key/${grpcResponse.customerId}/${grpcResponse.keyId}",
+				KeyResponse::class.java
+			)
+
+		assertEquals(HttpStatus.OK, response.status)
+		assertEquals(grpcResponse.keyId, response.body()!!.keyId)
+		assertEquals(grpcResponse.key, response.body()!!.key)
+		assertEquals(grpcResponse.keyType, response.body()!!.keyType)
+		assertEquals(grpcResponse.customerId, response.body()!!.customerId)
+		assertEquals(grpcResponse.account.customerCPF, response.body()!!.account.customerCPF)
+		assertEquals(grpcResponse.account.customerName, response.body()!!.account.customerName)
+		assertEquals(grpcResponse.account.accountType, response.body()!!.account.accountType.grpcType)
+		assertEquals(grpcResponse.account.branch, response.body()!!.account.accountBranch)
+		assertEquals(grpcResponse.account.number, response.body()!!.account.accountNumber)
+		assertEquals(grpcResponse.account.institution, response.body()!!.account.institution)
+	}
+
+	@Test
+	fun `should return not found error with status 404`() {
+		case(grpcClient.findKey(any(KeyDetailsRequest::class.java)))
+			.thenThrow(StatusRuntimeException(NOT_FOUND.withDescription("Key not found")))
+
+		val e = assertThrows<HttpClientResponseException> {
+			client.toBlocking().exchange("/api/key/1245", KeyResponse::class.java)
+		}
+
+		assertEquals(HttpStatus.NOT_FOUND, e.status)
+		assertEquals("Key not found", e.message)
+	}
+
+	@Test
+	fun `should return not found error with status 404 when find by customer and key id`() {
+		case(grpcClient.findKey(any(KeyDetailsRequest::class.java)))
+			.thenThrow(StatusRuntimeException(NOT_FOUND.withDescription("Key not found")))
+
+		val e = assertThrows<HttpClientResponseException> {
+			client.toBlocking().exchange("/api/key/${UUID.randomUUID()}/1", KeyResponse::class.java)
+		}
+
+		assertEquals(HttpStatus.NOT_FOUND, e.status)
+		assertEquals("Key not found", e.message)
 	}
 }
 
