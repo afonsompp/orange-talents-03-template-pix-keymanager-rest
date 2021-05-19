@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_outer_classname = "Pix";
+
+package br.com.zup.manage.pix;
+
+import "google/protobuf/timestamp.proto";
+
+service ManagePixService {
+  rpc registerKey(RegisterKeyRequest) returns (RegisterKeyResponse){}
+  rpc removeKey(RemoveKeyRequest) returns (RemoveKeyResponse){}
+  rpc findKey(KeyDetailsRequest) returns (KeyDetailsResponse){}
+  rpc listKeysOfCustomer(ListOfKeysRequest) returns (ListOfKeysResponse){}
+}
+
+enum KeyType {
+  UNKNOWN_TYPE = 0;
+  CPF = 1;
+  EMAIL = 2;
+  PHONE = 3;
+  RANDOM = 4;
+}
+
+enum AccountType {
+  UNKNOWN_ACCOUNT = 0;
+  CONTA_CORRENTE = 1;
+  CONTA_POUPANCA = 2;
+}
+
+message RegisterKeyRequest {
+  string customerId = 1;
+  KeyType type = 2;
+  string  value = 3;
+  AccountType accountType = 4;
+}
+message RegisterKeyResponse {
+  int64 keyId = 1;
+  string key = 2;
+}
+
+message RemoveKeyRequest{
+  string customerId = 1;
+  int64 keyId = 2;
+}
+
+message RemoveKeyResponse{
+  string message = 1;
+}
+
+message KeyDetailsRequest{
+  message PixKey {
+    int64 keyId = 1;
+    string customerId = 2;
+  }
+  oneof filter {
+    PixKey pixId = 1;
+    string key = 2;
+  }
+}
+
+
+message KeyDetailsResponse{
+  message AccountDetailsResponse {
+    string customerName = 1;
+    string customerCPF = 2;
+    AccountType accountType = 3;
+    string branch = 4;
+    string number = 5;
+    string institution = 6;
+  }
+  int64 keyId = 1;
+  string customerId = 2;
+  KeyType keyType = 3;
+  string  key = 4;
+  AccountDetailsResponse account = 5;
+  google.protobuf.Timestamp createdAt = 6;
+}
+
+message ListOfKeysRequest {
+  string customerId = 1;
+}
+
+message ListOfKeysResponse {
+  repeated KeyDetailsResponse key = 1;
+}
