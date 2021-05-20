@@ -246,6 +246,56 @@ internal class ManageKeyControllerTest {
 		assertEquals(HttpStatus.NOT_FOUND, e.status)
 		assertEquals("Key not found", e.message)
 	}
+
+	@Test
+	fun `Should return  key list of a customer when customer exists`() {
+		val now = Instant.now()
+		val grpcResponse = ListOfKeysResponse.newBuilder().addKey(
+			KeyDetailsResponse.newBuilder()
+				.setKey("02654220273")
+				.setKeyId(1)
+				.setCustomerId(UUID.randomUUID().toString())
+				.setKeyType(KeyType.CPF)
+				.setCreatedAt(
+					Timestamp.newBuilder()
+						.setSeconds(now.epochSecond)
+						.setNanos(now.nano)
+				)
+				.setAccount(
+					KeyDetailsResponse.AccountDetailsResponse.newBuilder()
+						.setCustomerCPF("02654220273")
+						.setCustomerName("Afonso")
+						.setAccountType(CONTA_CORRENTE)
+						.setBranch("123")
+						.setNumber("123")
+						.setInstitution("ITAÚ UNIBANCO S.A.")
+						.build()
+				).build()
+		).build()
+		case(grpcClient.listKeysOfCustomer(any(ListOfKeysRequest::class.java))).thenReturn(grpcResponse)
+
+		val response = client.toBlocking()
+			.exchange(
+				"/api/key/${UUID.randomUUID()}/all",
+				KeyResponse::class.java
+			)
+
+		assertEquals(HttpStatus.OK, response.status)
+		assertEquals(grpcResponse.keyList[0].keyId, response.body()!!.keyId)
+		assertEquals(grpcResponse.keyList[0].key, response.body()!!.key)
+		assertEquals(grpcResponse.keyList[0].keyType, response.body()!!.keyType)
+		assertEquals(grpcResponse.keyList[0].customerId, response.body()!!.customerId)
+		assertEquals(grpcResponse.keyList[0].account.customerCPF, response.body()!!.account.customerCPF)
+		assertEquals(grpcResponse.keyList[0].account.branch, response.body()!!.account.accountBranch)
+		assertEquals(grpcResponse.keyList[0].account.number, response.body()!!.account.accountNumber)
+		assertEquals(grpcResponse.keyList[0].account.institution, response.body()!!.account.institution)
+		assertEquals(
+			grpcResponse.keyList[0].account.customerName, response.body()!!.account.customerName
+		)
+		assertEquals(
+			grpcResponse.keyList[0].account.accountType, response.body()!!.account.accountType.grpcType
+		)
+	}
 }
 
 @Factory
