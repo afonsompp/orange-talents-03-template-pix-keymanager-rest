@@ -2,6 +2,7 @@ package br.com.itau.managekey
 
 import br.com.itau.shered.validation.ValidUUID
 import br.com.zup.manage.pix.KeyDetailsRequest
+import br.com.zup.manage.pix.ListOfKeysRequest
 import br.com.zup.manage.pix.ManagePixServiceGrpc
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.*
@@ -51,5 +52,16 @@ class ManageKeyController(@Inject val grpcClient: ManagePixServiceGrpc.ManagePix
 		)
 
 		return HttpResponse.ok(KeyResponse.of(response))
+	}
+
+	@Get("/{customerId}/all")
+	fun listAllKeysByCustomerI(@ValidUUID @NotBlank customerId: String): HttpResponse<List<KeyResponse>> {
+		val response = grpcClient.listKeysOfCustomer(
+			ListOfKeysRequest.newBuilder()
+				.setCustomerId(customerId).build()
+		)
+
+		response.keyList.map(KeyResponse::of)
+		return HttpResponse.ok(response.keyList.map(KeyResponse::of))
 	}
 }
