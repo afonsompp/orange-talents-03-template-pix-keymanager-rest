@@ -296,6 +296,19 @@ internal class ManageKeyControllerTest {
 			grpcResponse.keyList[0].account.accountType, response.body()!!.account.accountType.grpcType
 		)
 	}
+
+	@Test
+	fun `should return not found error with status 404 when not have customer`() {
+		case(grpcClient.listKeysOfCustomer(any(ListOfKeysRequest::class.java)))
+			.thenThrow(StatusRuntimeException(NOT_FOUND.withDescription("Key not found")))
+
+		val e = assertThrows<HttpClientResponseException> {
+			client.toBlocking().exchange("/api/key/${UUID.randomUUID()}/all", KeyResponse::class.java)
+		}
+
+		assertEquals(HttpStatus.NOT_FOUND, e.status)
+		assertEquals("Key not found", e.message)
+	}
 }
 
 @Factory
