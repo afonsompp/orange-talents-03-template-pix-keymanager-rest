@@ -138,68 +138,34 @@ internal class ManageKeyControllerTest {
 
 	@Test
 	fun `Should return details of a key if it exists`() {
-		val now = Instant.now()
-		val grpcResponse = KeyDetailsResponse.newBuilder()
-			.setKey("02654220273")
-			.setKeyId(1)
-			.setCustomerId(UUID.randomUUID().toString())
-			.setKeyType(KeyType.CPF)
-			.setCreatedAt(
-				Timestamp.newBuilder()
-					.setSeconds(now.epochSecond)
-					.setNanos(now.nano)
-			)
-			.setAccount(
-				KeyDetailsResponse.AccountDetailsResponse.newBuilder()
-					.setCustomerCPF("02654220273")
-					.setCustomerName("Afonso")
-					.setAccountType(CONTA_CORRENTE)
-					.setBranch("123")
-					.setNumber("123")
-					.setInstitution("ITAÚ UNIBANCO S.A.")
-					.build()
-			).build()
+		val grpcResponse = newKeyDetailsResponse().build()
 		case(grpcClient.findKey(any(KeyDetailsRequest::class.java))).thenReturn(grpcResponse)
 
 		val response =
 			client.toBlocking().exchange("/api/key/${grpcResponse.key}", KeyResponse::class.java)
 
 		assertEquals(HttpStatus.OK, response.status)
-		assertEquals(grpcResponse.keyId, response.body()!!.keyId)
-		assertEquals(grpcResponse.key, response.body()!!.key)
-		assertEquals(grpcResponse.keyType, response.body()!!.keyType)
-		assertEquals(grpcResponse.customerId, response.body()!!.customerId)
-		assertEquals(grpcResponse.account.customerCPF, response.body()!!.account.customerCPF)
-		assertEquals(grpcResponse.account.customerName, response.body()!!.account.customerName)
-		assertEquals(grpcResponse.account.accountType, response.body()!!.account.accountType.grpcType)
-		assertEquals(grpcResponse.account.branch, response.body()!!.account.accountBranch)
-		assertEquals(grpcResponse.account.number, response.body()!!.account.accountNumber)
-		assertEquals(grpcResponse.account.institution, response.body()!!.account.institution)
+		with(grpcResponse) expected@{
+			with(response.body()!!) {
+				assertEquals(this@expected.keyId, keyId)
+				assertEquals(this@expected.key, key)
+				assertEquals(this@expected.keyType, keyType)
+				assertEquals(this@expected.customerId, customerId)
+			}
+			with(response.body()!!.account) {
+				assertEquals(account.customerCPF, customerCPF)
+				assertEquals(account.customerName, customerName)
+				assertEquals(account.accountType, accountType.grpcType)
+				assertEquals(account.branch, accountBranch)
+				assertEquals(account.number, accountNumber)
+				assertEquals(account.institution, institution)
+			}
+		}
 	}
 
 	@Test
 	fun `Should return details of a key if it exists when find by customer and key id`() {
-		val now = Instant.now()
-		val grpcResponse = KeyDetailsResponse.newBuilder()
-			.setKey("02654220273")
-			.setKeyId(1)
-			.setCustomerId(UUID.randomUUID().toString())
-			.setKeyType(KeyType.CPF)
-			.setCreatedAt(
-				Timestamp.newBuilder()
-					.setSeconds(now.epochSecond)
-					.setNanos(now.nano)
-			)
-			.setAccount(
-				KeyDetailsResponse.AccountDetailsResponse.newBuilder()
-					.setCustomerCPF("02654220273")
-					.setCustomerName("Afonso")
-					.setAccountType(CONTA_CORRENTE)
-					.setBranch("123")
-					.setNumber("123")
-					.setInstitution("ITAÚ UNIBANCO S.A.")
-					.build()
-			).build()
+		val grpcResponse = newKeyDetailsResponse().build()
 		case(grpcClient.findKey(any(KeyDetailsRequest::class.java))).thenReturn(grpcResponse)
 
 		val response = client.toBlocking()
@@ -209,16 +175,22 @@ internal class ManageKeyControllerTest {
 			)
 
 		assertEquals(HttpStatus.OK, response.status)
-		assertEquals(grpcResponse.keyId, response.body()!!.keyId)
-		assertEquals(grpcResponse.key, response.body()!!.key)
-		assertEquals(grpcResponse.keyType, response.body()!!.keyType)
-		assertEquals(grpcResponse.customerId, response.body()!!.customerId)
-		assertEquals(grpcResponse.account.customerCPF, response.body()!!.account.customerCPF)
-		assertEquals(grpcResponse.account.customerName, response.body()!!.account.customerName)
-		assertEquals(grpcResponse.account.accountType, response.body()!!.account.accountType.grpcType)
-		assertEquals(grpcResponse.account.branch, response.body()!!.account.accountBranch)
-		assertEquals(grpcResponse.account.number, response.body()!!.account.accountNumber)
-		assertEquals(grpcResponse.account.institution, response.body()!!.account.institution)
+		with(grpcResponse) expected@{
+			with(response.body()!!) {
+				assertEquals(this@expected.keyId, keyId)
+				assertEquals(this@expected.key, key)
+				assertEquals(this@expected.keyType, keyType)
+				assertEquals(this@expected.customerId, customerId)
+			}
+			with(response.body()!!.account) {
+				assertEquals(account.customerCPF, customerCPF)
+				assertEquals(account.customerName, customerName)
+				assertEquals(account.accountType, accountType.grpcType)
+				assertEquals(account.branch, accountBranch)
+				assertEquals(account.number, accountNumber)
+				assertEquals(account.institution, institution)
+			}
+		}
 	}
 
 	@Test
@@ -249,29 +221,8 @@ internal class ManageKeyControllerTest {
 
 	@Test
 	fun `Should return  key list of a customer when customer exists`() {
-		val now = Instant.now()
-		val grpcResponse = ListOfKeysResponse.newBuilder().addKey(
-			KeyDetailsResponse.newBuilder()
-				.setKey("02654220273")
-				.setKeyId(1)
-				.setCustomerId(UUID.randomUUID().toString())
-				.setKeyType(KeyType.CPF)
-				.setCreatedAt(
-					Timestamp.newBuilder()
-						.setSeconds(now.epochSecond)
-						.setNanos(now.nano)
-				)
-				.setAccount(
-					KeyDetailsResponse.AccountDetailsResponse.newBuilder()
-						.setCustomerCPF("02654220273")
-						.setCustomerName("Afonso")
-						.setAccountType(CONTA_CORRENTE)
-						.setBranch("123")
-						.setNumber("123")
-						.setInstitution("ITAÚ UNIBANCO S.A.")
-						.build()
-				).build()
-		).build()
+		val grpcResponse =
+			ListOfKeysResponse.newBuilder().addKey(newKeyDetailsResponse().build()).build()
 		case(grpcClient.listKeysOfCustomer(any(ListOfKeysRequest::class.java))).thenReturn(grpcResponse)
 
 		val response = client.toBlocking()
@@ -280,21 +231,23 @@ internal class ManageKeyControllerTest {
 				KeyResponse::class.java
 			)
 
-		assertEquals(HttpStatus.OK, response.status)
-		assertEquals(grpcResponse.keyList[0].keyId, response.body()!!.keyId)
-		assertEquals(grpcResponse.keyList[0].key, response.body()!!.key)
-		assertEquals(grpcResponse.keyList[0].keyType, response.body()!!.keyType)
-		assertEquals(grpcResponse.keyList[0].customerId, response.body()!!.customerId)
-		assertEquals(grpcResponse.keyList[0].account.customerCPF, response.body()!!.account.customerCPF)
-		assertEquals(grpcResponse.keyList[0].account.branch, response.body()!!.account.accountBranch)
-		assertEquals(grpcResponse.keyList[0].account.number, response.body()!!.account.accountNumber)
-		assertEquals(grpcResponse.keyList[0].account.institution, response.body()!!.account.institution)
-		assertEquals(
-			grpcResponse.keyList[0].account.customerName, response.body()!!.account.customerName
-		)
-		assertEquals(
-			grpcResponse.keyList[0].account.accountType, response.body()!!.account.accountType.grpcType
-		)
+		with(grpcResponse.keyList[0]) grpc@{
+			assertEquals(HttpStatus.OK, response.status)
+			with(response.body()!!) {
+				assertEquals(this@grpc.keyId, keyId)
+				assertEquals(this@grpc.key, key)
+				assertEquals(this@grpc.keyType, keyType)
+				assertEquals(this@grpc.customerId, customerId)
+			}
+			with(response.body()!!.account) {
+				assertEquals(account.customerCPF, customerCPF)
+				assertEquals(account.branch, accountBranch)
+				assertEquals(account.number, accountNumber)
+				assertEquals(account.institution, institution)
+				assertEquals(account.customerName, customerName)
+				assertEquals(account.accountType, accountType.grpcType)
+			}
+		}
 	}
 
 	@Test
@@ -309,11 +262,36 @@ internal class ManageKeyControllerTest {
 		assertEquals(HttpStatus.NOT_FOUND, e.status)
 		assertEquals("Key not found", e.message)
 	}
+
+	private fun newKeyDetailsResponse(): KeyDetailsResponse.Builder {
+		val now = Instant.now()
+		return KeyDetailsResponse.newBuilder()
+			.setKey("02654220273")
+			.setKeyId(1)
+			.setCustomerId(UUID.randomUUID().toString())
+			.setKeyType(KeyType.CPF)
+			.setCreatedAt(
+				Timestamp.newBuilder()
+					.setSeconds(now.epochSecond)
+					.setNanos(now.nano)
+			)
+			.setAccount(
+				KeyDetailsResponse.AccountDetailsResponse.newBuilder()
+					.setCustomerCPF("02654220273")
+					.setCustomerName("Afonso")
+					.setAccountType(CONTA_CORRENTE)
+					.setBranch("123")
+					.setNumber("123")
+					.setInstitution("ITAÚ UNIBANCO S.A.")
+					.build()
+			)
+	}
 }
 
 @Factory
 @Replaces(factory = ManageKeyGrpcClient::class)
 internal class MockGrpcClient {
 	@Singleton
-	fun grpcClient() = mock(ManagePixServiceGrpc.ManagePixServiceBlockingStub::class.java)
+	fun grpcClient(): ManagePixServiceGrpc.ManagePixServiceBlockingStub =
+		mock(ManagePixServiceGrpc.ManagePixServiceBlockingStub::class.java)
 }
